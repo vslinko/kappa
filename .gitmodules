@@ -4,3 +4,6 @@
 [submodule "vendor/kayako"]
 	path = vendor/kayako
 	url = git://github.com/vslinko/Kayako-REST-API-Client.git
+[submodule "vendor/twig"]
+	path = vendor/twig
+	url = git://github.com/fabpot/Twig.git

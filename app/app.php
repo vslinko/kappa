@@ -13,9 +13,10 @@ foreach ($config as $key => $value) {
     $app[$key] = $value;
 }
 
+$app->register(new Silex\Provider\TwigServiceProvider());
 $app->register(new Kappa\KayakoProvider());
 
-$storage = function($key, $factory, $ttl = 3600) {
+$storage = function ($key, $factory, $ttl = 3600) {
     $success = false;
     $result = apc_fetch($key, $success);
 
@@ -28,17 +29,37 @@ $storage = function($key, $factory, $ttl = 3600) {
     return $result;
 };
 
-$app->get('/', function () use ($app, $storage) {
+$each = function ($array, $callback) {
+    $result = array();
+
+    foreach ($array as $value) {
+        $key = $callback($value);
+
+        if ($key) {
+            $result[$key] = $value;
+        } else {
+            $result[] = $value;
+        }
+    }
+
+    return $result;
+};
+
+$app->get('/', function () use ($app, $storage, $each) {
     $department = $storage('kappa:department', function () use ($app) {
         return kyDepartment::get($app['kappa.department']);
     });
 
-    $statuses = $storage('kappa:statuses', function () use ($app) {
+    $statuses = $storage('kappa:statuses', function () use ($app, $each) {
         $statuses = array();
 
         foreach ($app['kappa.statuses'] as $statusId) {
             $statuses[] = kyTicketStatus::get($statusId);
         }
+
+        uasort($statuses, function ($a, $b) {
+             return $a->getDisplayOrder() > $b->getDisplayOrder();
+        });
 
         return new kyResultSet($statuses);
     });
@@ -50,17 +71,76 @@ $app->get('/', function () use ($app, $storage) {
             $staffs[] = kyStaff::get($staffId);
         }
 
+        uasort($staffs, function ($a, $b) {
+             return $a->getFullname() > $b->getFullName();
+        });
+
         return new kyResultSet($staffs);
     });
 
-    $tickets = kyTicket::getAll($department, $statuses, $staffs);
+    $tickets = kyTicket::getAll($department, $statuses, $staffs)->orderByStatusId();
 
-    $text = print_r($department, true);
-    $text .= print_r($statuses, true);
-    $text .= print_r($staffs, true);
-    $text .= print_r($tickets, true);
+    $statuses = $each($statuses, function ($status) {
+        return $status->getId();
+    });
 
-    return new Symfony\Component\HttpFoundation\Response($text, 200, array('Content-Type' => 'text/plain'));
+    $staffs = $each($staffs, function ($staffs) {
+        return $staffs->getId();
+    });
+
+    $tickets = $each($tickets, function (&$ticket) use ($app) {
+        $lastActivity = new DateTime($ticket->getLastActivity());
+
+        $ticket->new = time() - $lastActivity->getTimestamp() < 600;
+
+        $ticket->classes = array();
+
+        switch ($ticket->getFlagType()) {
+            case kyTicket::FLAG_PURPLE:
+                $ticket->classes[] = 'purple';
+                break;
+            case kyTicket::FLAG_ORANGE:
+                $ticket->classes[] = 'orange';
+                break;
+            case kyTicket::FLAG_GREEN:
+                $ticket->classes[] = 'green';
+                break;
+            case kyTicket::FLAG_YELLOW:
+                $ticket->classes[] = 'yellow';
+                break;
+            case kyTicket::FLAG_RED:
+                $ticket->classes[] = 'red';
+                break;
+            case kyTicket::FLAG_BLUE:
+                $ticket->classes[] = 'blue';
+                break;
+        }
+
+        $ticket->classes = implode(' ', $ticket->classes);
+
+        $ticket->url = sprintf($app['kappa.ticket_url'], $ticket->getId());
+
+        return $ticket->getId();
+    });
+
+    $table = array();
+    foreach ($staffs as $staffId => $staff) {
+        $table[$staffId] = array();
+
+        foreach ($statuses as $statusId => $status) {
+            $table[$staffId][$statusId] = array_filter($tickets, function ($ticket) use ($staffId, $statusId) {
+                return $ticket->getOwnerStaffId() == $staffId && $ticket->getStatusId() == $statusId;
+            });
+        }
+    }
+
+    return $app['twig']->render('kappa.twig', array(
+        'statuses' => $statuses,
+        'staffs' => $staffs,
+        'table' => $table,
+        'column_size' => 100/(count($statuses)+1),
+        'row_size' => 95/count($staffs)
+    ));
 });
 
 return $app;

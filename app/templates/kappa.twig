@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Kappa</title>
+        <style type="text/css">
+            html {
+                background-color: #2e3436;
+                color: #eeeeec;
+                font-family: sans-serif;
+            }
+
+            a {
+                color: #eeeeec;
+            }
+
+            html, body, table {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            table {
+                border-collapse: collapse;
+            }
+
+            th {
+                white-space: nowrap;
+            }
+
+            td {
+                border: 1px solid #2e3436;
+                padding: 10px;
+                vertical-align: top;
+            }
+
+            th.name {
+                text-align: right;
+                padding-right: 30px;
+            }
+
+            ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+            }
+
+            li {
+                font-size: 180%;
+                font-weight: bold;
+                display: inline-block;
+                margin: 0 10px 10px 0;
+            }
+
+            .purple {
+                background-color: #ad7fa8;
+            }
+
+            .orange {
+                background-color: #fcaf3e;
+            }
+
+            .green {
+                background-color: #8ae234;
+            }
+
+            .yellow {
+                background-color: #fce94f;
+            }
+
+            .red {
+                background-color: #ef2929;
+            }
+
+            .blue {
+                background-color: #729fcf;
+            }
+
+            .purple a, .orange a, .green a, .yellow a, .red a, .blue a {
+                color: #2e3436;
+            }
+        </style>
+    </head>
+    <body>
+        <table>
+            <tr style="height: 5%;">
+                <th style="width: {{ column_size }}%;"></th>
+                {% for status in statuses %}
+                <th style="width: {{ column_size }}%;">{{ status.title }}</th>
+                {% endfor %}
+            </tr>
+            {% for staffId, tableStatuses in table %}
+            <tr style="height: {{ row_size }}%;">
+                <th class="name">{{ staffs[staffId].fullname }}</th>
+                {% for statusId, tickets in tableStatuses %}
+                <td style="background-color: {{ statuses[statusId].statusBackgroundColor }};">
+                    <ul>
+                        {% for ticket in tickets %}
+                        <li{% if ticket.new %} style="color: {{ statuses[statusId].statusColor }} !important;"{% endif %} class="{{ ticket.classes }}">
+                            <a href="{{ ticket.url }}" title="{{ ticket.subject }}"><span>#</span>{{ ticket.id }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    </body>
+</html>
