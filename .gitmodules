@@ -1,3 +1,6 @@
 [submodule "vendor/silex"]
 	path = vendor/silex
 	url = git://github.com/fabpot/Silex.git
+[submodule "vendor/kayako"]
+	path = vendor/kayako
+	url = git://github.com/vslinko/Kayako-REST-API-Client.git
