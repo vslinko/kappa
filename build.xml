@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="kappa" default="build">
+    <property name="vendor" value="${project.basedir}/vendor"/>
+    <property name="silex" value="${vendor}/silex.phar"/>
+    <property name="silex-url" value="http://silex.sensiolabs.org/get/silex.phar"/>
+
+    <target name="build">
+        <if>
+            <available file="${silex}"/>
+            <then>
+                <exec command="php ${silex} update" checkreturn="true"/>
+            </then>
+            <else>
+                <exec command="wget ${silex-url}" dir="${vendor}"
+                      checkreturn="true"/>
+            </else>
+        </if>
+    </target>
+
+    <target name="clean">
+        <delete file="${silex}"/>
+    </target>
+</project>
