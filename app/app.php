@@ -45,15 +45,21 @@ $each = function ($array, $callback) {
     return $result;
 };
 
-$app->get('/', function () use ($app, $storage, $each) {
-    $department = $storage('kappa:department', function () use ($app) {
-        return kyDepartment::get($app['kappa.department']);
+$app->get('/{configName}', function ($configName) use ($app, $storage, $each) {
+    if (!isset($app['kappa'][$configName])) {
+        throw new Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
+    }
+
+    $config = $app['kappa'][$configName];
+
+    $department = $storage('kappa:department:' . $configName, function () use ($config) {
+        return kyDepartment::get($config['department']);
     });
 
-    $statuses = $storage('kappa:statuses', function () use ($app, $each) {
+    $statuses = $storage('kappa:statuses:' . $configName, function () use ($config, $each) {
         $statuses = array();
 
-        foreach ($app['kappa.statuses'] as $statusId) {
+        foreach ($config['statuses'] as $statusId) {
             $statuses[] = kyTicketStatus::get($statusId);
         }
 
@@ -64,10 +70,10 @@ $app->get('/', function () use ($app, $storage, $each) {
         return new kyResultSet($statuses);
     });
 
-    $staffs = $storage('kappa:staff', function () use ($app) {
+    $staffs = $storage('kappa:staff:' . $configName, function () use ($config) {
         $staffs = array();
 
-        foreach ($app['kappa.staff'] as $staffId) {
+        foreach ($config['staff'] as $staffId) {
             $staffs[] = kyStaff::get($staffId);
         }
 
