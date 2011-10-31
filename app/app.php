@@ -143,4 +143,18 @@ $app->get('/', function () use ($app, $storage, $each) {
     ));
 });
 
+$app->error(function (Exception $e, $code) use ($app) {
+    switch ($code) {
+        case 404:
+            $template = 'not_found.twig';
+            break;
+        default:
+            $template = 'error.twig';
+    }
+
+    $content = $app['twig']->render($template);
+
+    return new Symfony\Component\HttpFoundation\Response($content, $code);
+});
+
 return $app;
