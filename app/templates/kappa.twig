@@ -79,11 +79,39 @@
             .purple a, .orange a, .green a, .yellow a, .red a, .blue a {
                 color: #2e3436;
             }
+
+            .tooltip {
+                display: none;
+                background-color: #eeeeec;
+                border: 1px solid #555753;
+                color: #2e3436;
+                font-size: 50%;
+                font-weight: normal;
+                padding: 10px 20px;
+                border-radius: 10px;
+                width: 250px;
+            }
         </style>
         <script type="text/javascript">
             setTimeout(function () {
                 document.location.href = document.location.href;
             }, 60000);
+        </script>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+        <script type="text/javascript" src="http://cdn.jquerytools.org/1.2.6/jquery.tools.min.js"></script>
+        <script type="text/javascript">
+            $(function () {
+                $('.ticket').each(function () {
+                    var $ticket = $(this);
+
+                    $ticket.tooltip({
+                        tipClass: 'tooltip-' + $ticket.attr('id'),
+                        position: 'center left',
+                        offset: [0, -10],
+                        relative: true
+                    });
+                });
+            });
         </script>
     </head>
     <body>
@@ -102,7 +130,14 @@
                     <ul>
                         {% for ticket in tickets %}
                         <li{% if ticket.new %} style="color: {{ statuses[statusId].statusColor }} !important;"{% endif %} class="{{ ticket.classes }}">
-                            <a href="{{ ticket.url }}" title="{{ ticket.subject }}"><span>#</span>{{ ticket.id }}</a>
+                            <a class="ticket" href="{{ ticket.url }}" id="{{ ticket.id }}"><span>#</span>{{ ticket.id }}</a>
+                            <div class="tooltip tooltip-{{ ticket.id }}">
+                                <p><b>{{ ticket.subject }}</b></p>
+                                <p>
+                                    <b>Creator:</b> {{ ticket.fullname }}<br/>
+                                    <b>Last replier:</b> {{ ticket.lastReplier }}
+                                </p>
+                            </div>
                         </li>
                         {% endfor %}
                     </ul>
