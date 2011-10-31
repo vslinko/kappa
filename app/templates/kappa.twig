@@ -34,9 +34,18 @@
                 vertical-align: top;
             }
 
+            td.big {
+                font-size: 150%;
+            }
+
+            td.small {
+                font-size: 80%;
+            }
+
             th.name {
                 text-align: right;
                 padding-right: 30px;
+                font-size: 150%;
             }
 
             ul {
@@ -110,6 +119,17 @@
                         offset: [0, -10],
                         relative: true
                     });
+                });
+
+                $('td').each(function () {
+                    var $td = $(this),
+                        length = $td.find('li').length;
+
+                    if (length < 4) {
+                        $td.addClass('big');
+                    } else if (length > 10) {
+                        $td.addClass('small');
+                    }
                 });
             });
         </script>
