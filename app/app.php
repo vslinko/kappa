@@ -87,6 +87,12 @@ $app->get('/{configName}', function ($configName) use ($app, $storage, $each) {
     $tickets = kyTicket::getAll($department, $statuses, $staffs)->orderByStatusId();
 
     $statuses = $each($statuses, function ($status) {
+        $class = strtolower(trim($status->getTitle()));
+        $class = preg_replace('/[^a-z0-9-]/', '-', $class);
+        $class = preg_replace('/-+/', '-', $class);
+
+        $status->class = $class;
+
         return $status->getId();
     });
 
@@ -143,9 +149,7 @@ $app->get('/{configName}', function ($configName) use ($app, $storage, $each) {
     return $app['twig']->render('kappa.twig', array(
         'statuses' => $statuses,
         'staffs' => $staffs,
-        'table' => $table,
-        'column_size' => 100/(count($statuses)+1),
-        'row_size' => 95/count($staffs)
+        'table' => $table
     ));
 });
 
