@@ -135,7 +135,8 @@ $app->get('/{id}', function ($id) use ($app, $storage, $each) {
     }, 50);
 
     return $app['twig']->render('department.twig', $result);
-})->bind('department');
+
+})->bind('department')->assert('id', '\d+');
 
 
 $app->error(function (Exception $e, $code) use ($app) {
