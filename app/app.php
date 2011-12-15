@@ -58,6 +58,10 @@ $app->get('/{id}', function ($id) use ($app, $storage, $each) {
     $result = $storage('kappa:department:' . $id, function () use ($id, $app, $each) {
         $department = kyDepartment::get($id);
 
+        if (!$department) {
+            $app->abort(404);
+        }
+
         $statuses = kyTicketStatus::getAll()->filterByMarkAsResolved(false)->orderByDisplayOrder();
 
         $statuses = $each($statuses, function ($status) {
