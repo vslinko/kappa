@@ -15,6 +15,7 @@ foreach ($config as $key => $value) {
 
 $app->register(new Silex\Provider\TwigServiceProvider());
 $app->register(new Kappa\KayakoProvider());
+$app->register(new \Silex\Provider\UrlGeneratorServiceProvider());
 
 $storage = function ($key, $factory, $ttl = 3600) {
     $success = false;
@@ -45,113 +46,93 @@ $each = function ($array, $callback) {
     return $result;
 };
 
-$app->get('/{configName}', function ($configName) use ($app, $storage, $each) {
-    if (!isset($app['kappa'][$configName])) {
-        throw new Symfony\Component\HttpKernel\Exception\NotFoundHttpException();
-    }
-
-    $config = $app['kappa'][$configName];
-
-    $department = $storage('kappa:department:' . $configName, function () use ($config) {
-        return kyDepartment::get($config['department']);
+$app->get('/', function () use ($app, $storage) {
+    $result = $storage('kappa:departments', function () {
+        return array('departments' => kyDepartment::getAll()->orderByTitle());
     });
 
-    $statuses = $storage('kappa:statuses:' . $configName, function () use ($config, $each) {
-        $statuses = array();
-
-        foreach ($config['statuses'] as $statusId) {
-            $statuses[] = kyTicketStatus::get($statusId);
-        }
-
-        uasort($statuses, function ($a, $b) {
-             return $a->getDisplayOrder() > $b->getDisplayOrder();
-        });
-
-        return new kyResultSet($statuses);
-    });
-
-    $staffs = $storage('kappa:staff:' . $configName, function () use ($config) {
-        $staffs = array();
-
-        foreach ($config['staff'] as $staffId) {
-            $staffs[] = kyStaff::get($staffId);
-        }
-
-        uasort($staffs, function ($a, $b) {
-             return $a->getFullname() > $b->getFullName();
-        });
-
-        return new kyResultSet($staffs);
-    });
-
-    $tickets = kyTicket::getAll($department, $statuses, $staffs)->orderByStatusId();
-
-    $statuses = $each($statuses, function ($status) {
-        $class = strtolower(trim($status->getTitle()));
-        $class = preg_replace('/[^a-z0-9-]/', '-', $class);
-        $class = preg_replace('/-+/', '-', $class);
-
-        $status->class = $class;
-
-        return $status->getId();
-    });
-
-    $staffs = $each($staffs, function ($staffs) {
-        return $staffs->getId();
-    });
-
-    $tickets = $each($tickets, function (&$ticket) use ($app) {
-        $lastActivity = new DateTime($ticket->getLastActivity());
-
-        $ticket->new = time() - $lastActivity->getTimestamp() < 600;
-
-        $ticket->classes = array();
-
-        switch ($ticket->getFlagType()) {
-            case kyTicket::FLAG_PURPLE:
-                $ticket->classes[] = 'purple';
-                break;
-            case kyTicket::FLAG_ORANGE:
-                $ticket->classes[] = 'orange';
-                break;
-            case kyTicket::FLAG_GREEN:
-                $ticket->classes[] = 'green';
-                break;
-            case kyTicket::FLAG_YELLOW:
-                $ticket->classes[] = 'yellow';
-                break;
-            case kyTicket::FLAG_RED:
-                $ticket->classes[] = 'red';
-                break;
-            case kyTicket::FLAG_BLUE:
-                $ticket->classes[] = 'blue';
-                break;
-        }
-
-        $ticket->classes = implode(' ', $ticket->classes);
-
-        $ticket->url = sprintf($app['kappa.ticket_url'], $ticket->getId());
-
-        return $ticket->getId();
-    });
-
-    $table = array();
-    foreach ($staffs as $staffId => $staff) {
-        $table[$staffId] = array();
-
-        foreach ($statuses as $statusId => $status) {
-            $table[$staffId][$statusId] = array_filter($tickets, function ($ticket) use ($staffId, $statusId) {
-                return $ticket->getOwnerStaffId() == $staffId && $ticket->getStatusId() == $statusId;
-            });
-        }
-    }
-
-    return $app['twig']->render('kappa.twig', array(
-        'statuses' => $statuses,
-        'staffs' => $staffs,
-        'table' => $table
-    ));
+    return $app['twig']->render('departments.twig', $result);
 });
+
+$app->get('/{id}', function ($id) use ($app, $storage, $each) {
+    $result = $storage('kappa:department:' . $id, function () use ($id, $app, $each) {
+        $department = kyDepartment::get($id);
+
+        $statuses = kyTicketStatus::getAll()->filterByMarkAsResolved(false)->orderByDisplayOrder();
+
+        $statuses = $each($statuses, function ($status) {
+            $class = strtolower(trim($status->getTitle()));
+            $class = preg_replace('/[^a-z0-9-]/', '-', $class);
+            $class = preg_replace('/-+/', '-', $class);
+
+            $status->class = $class;
+
+            return $status->getId();
+        });
+
+        $tickets = kyTicket::getAll($department, $statuses)->orderByOwnerStaffName();
+
+        $tickets = $each($tickets, function (&$ticket) use ($app) {
+            $ticket->classes = array();
+
+            switch ($ticket->getFlagType()) {
+                case kyTicket::FLAG_PURPLE:
+                    $ticket->classes[] = 'purple';
+                    break;
+                case kyTicket::FLAG_ORANGE:
+                    $ticket->classes[] = 'orange';
+                    break;
+                case kyTicket::FLAG_GREEN:
+                    $ticket->classes[] = 'green';
+                    break;
+                case kyTicket::FLAG_YELLOW:
+                    $ticket->classes[] = 'yellow';
+                    break;
+                case kyTicket::FLAG_RED:
+                    $ticket->classes[] = 'red';
+                    break;
+                case kyTicket::FLAG_BLUE:
+                    $ticket->classes[] = 'blue';
+                    break;
+            }
+
+            $ticket->classes = implode(' ', $ticket->classes);
+
+            $ticket->url = sprintf($app['kappa.ticket_url'], $ticket->getId());
+
+            return $ticket->getId();
+        });
+
+        $table = array();
+
+        foreach ($tickets as $ticket) {
+            $staffName = $ticket->getOwnerStaffName();
+
+            if (empty($staffName)) {
+                $staffName = "Unassigned";
+            }
+
+            if (!isset($table[$staffName])) {
+                $table[$staffName] = array();
+
+                foreach ($statuses as $statusId => $status) {
+                    $table[$staffName][$statusId] = array();
+                }
+            }
+
+            $table[$staffName][$ticket->getStatusId()][] = $ticket;
+        }
+
+        return array(
+            'department' => $department,
+            'statuses' => $statuses,
+            'table' => $table
+        );
+    }, 50);
+
+    return $app['twig']->render('department.twig', $result);
+})->bind('department');
+
 
 $app->error(function (Exception $e, $code) use ($app) {
     switch ($code) {

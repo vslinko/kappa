@@ -1,0 +1,7 @@
+{% extends "base.twig" %}
+
+{% block body %}
+    {% for department in departments %}
+        <h1><a href="{{ app.url_generator.generate('department', {'id': department.id}) }}">{{ department.title }}</a></h1>
+    {% endfor %}
+{% endblock %}

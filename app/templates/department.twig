@@ -1,0 +1,76 @@
+{% extends "base.twig" %}
+
+{% block head %}
+<style type="text/css">
+    {% for status in statuses %}
+    .{{ status.class }} {
+        border-left: 2px solid {{ status.statusBackgroundColor }};
+    }
+
+    th.{{ status.class }} {
+        color: {{ status.statusBackgroundColor }};
+    }
+    {% endfor %}
+</style>
+<script type="text/javascript">
+    window.onload = function () {
+        var tickets = document.getElementsByTagName('li');
+
+        for (i in tickets) {
+            var ticket = tickets[i];
+
+            ticket.onmouseover = function () {
+                this.className += ' active';
+            };
+
+            ticket.onmouseout = function () {
+                this.className = this.className.replace(' active', '');
+            };
+        }
+    };
+
+    setTimeout(function () {
+        document.location.href = document.location.href;
+    }, 60000);
+</script>
+{% endblock %}
+
+{% block body %}
+<h1>{{ department.title }}</h1>
+<table>
+    <thead>
+        <tr>
+            <th></th>
+            {% for status in statuses %}
+            <th class="{{ status.class }}">{{ status.title }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for staffName, table_statuses in table %}
+        <tr>
+            <th>{{ staffName }}</th>
+                {% for statusId, tickets in table_statuses %}
+                <td class="{{ statuses[statusId].class }}">
+                    <ul>
+                        {% for ticket in tickets %}
+                        <li class="{{ ticket.classes }}">
+                            <a href="{{ ticket.url }}">#{{ ticket.id }}</a>
+                            <div>
+                                <p>{{ ticket.subject }}</p>
+                                <p>
+                                    <b>Creator:</b> {{ ticket.fullname }}
+                                    <br/>
+                                    <b>Last replier:</b> {{ ticket.lastReplier }}
+                                </p>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
