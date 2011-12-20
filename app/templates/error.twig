@@ -2,14 +2,22 @@
 <html>
     <head>
         <title>Kappa — Not Found</title>
+
+        {% if not app.debug %}
         <script type="text/javascript">
             setTimeout(function () {
                 document.location.href = document.location.href;
             }, 30000);
         </script>
+        {% endif %}
     </head>
     <body>
-        <h1>Something went terribly wrong</h1>
-        <h2>Page will be reloaded automatically</h2>
+        {% if app.debug %}
+            <p>{{ exception.message }}</p>
+            <pre>{{ exception.getTraceAsString() }}</pre>
+        {% else %}
+            <h1>Something went terribly wrong</h1>
+            <h2>Page will be reloaded automatically</h2>
+        {% endif %}
     </body>
 </html>

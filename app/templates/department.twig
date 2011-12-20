@@ -2,12 +2,12 @@
 
 {% block head %}
 <style type="text/css">
-    {% for status in statuses %}
-    .{{ status.class }} {
+    {% for status in app['kappa.statuses'] %}
+    .{{ status.title|slugify }} {
         border-left: 2px solid {{ status.statusBackgroundColor }};
     }
 
-    th.{{ status.class }} {
+    th.{{ status.title|slugify }} {
         color: {{ status.statusBackgroundColor }};
     }
     {% endfor %}
@@ -36,13 +36,12 @@
 {% endblock %}
 
 {% block body %}
-<h1>{{ department.title }}</h1>
 <table>
     <thead>
         <tr>
             <th></th>
-            {% for status in statuses %}
-            <th class="{{ status.class }}">{{ status.title }}</th>
+            {% for status in app['kappa.statuses'] %}
+            <th class="{{ status.title|slugify }}">{{ status.title }}</th>
             {% endfor %}
         </tr>
     </thead>
@@ -51,11 +50,11 @@
         <tr>
             <th>{{ staffName }}</th>
                 {% for statusId, tickets in table_statuses %}
-                <td class="{{ statuses[statusId].class }}">
+                <td class="{{ app['kappa.statuses'][statusId].title|slugify }}">
                     <ul>
                         {% for ticket in tickets %}
-                        <li class="{{ ticket.classes }}">
-                            <a href="{{ ticket.url }}">#{{ ticket.id }}</a>
+                        <li class="{{ ticket|statuses }}">
+                            <a href="{{ app['kappa.ticket_url']|format(ticket.id) }}">#{{ ticket.id }}</a>
                             <div>
                                 <p>{{ ticket.subject }}</p>
                                 <p>
