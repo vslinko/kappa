@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Statistics</title>
+    <script src="https://raw.github.com/DmitryBaranovskiy/raphael/master/raphael.js"></script>
+    <script>
+        window.onload = function () {
+            var statistics = {{ statistics|raw }};
+
+            var Colors = function () {
+                var colors = ['#fce94f', '#fcaf3e', '#e9b96e', '#8ae234', '#729fcf', '#ad7fa8', '#ef2929'];
+                var i = -1;
+
+                this.getColor = function () {
+                    i++;
+                    if (i == colors.length) {
+                        i = 0;
+                    }
+                    return colors[i];
+                };
+            };
+
+            var zoom,
+                    height = 50,
+                    margin = 20,
+                    pos = margin,
+                    labelSize = margin * 2 + 200,
+                    colors = new Colors();
+
+
+            var end = new Date().getTime() / 1000;
+            if (end < statistics.end) {
+                end = statistics.end;
+            }
+            end += margin;
+            var diff = end - statistics.start;
+            var fieldWidth = document.width - labelSize - margin;
+            zoom = diff / fieldWidth;
+
+
+            var paper = Raphael("holder", document.width, document.height);
+            var background = paper.rect(0, 0, document.width, document.height);
+            background.attr('fill', '#2e3436');
+            var staffPanel = paper.rect(0, 0, labelSize, document.height);
+            staffPanel.attr('fill', '#555753');
+
+            for (staff in statistics.staffs) {
+                var staffLabel = paper.text(margin, pos + height / 2, staff);
+                staffLabel.attr('text-anchor', 'start');
+                staffLabel.attr('font-size', 20);
+                staffLabel.attr('fill', '#eeeeec');
+
+                for (trackNo in statistics.staffs[staff]) {
+                    var track = statistics.staffs[staff][trackNo];
+
+                    var rect = paper.rect((track.start - statistics.start) / zoom + labelSize, pos, (track.end - track.start) / zoom, height);
+                    rect.attr('fill', colors.getColor());
+                    rect.attr('stroke', '#eeeeec');
+
+                    var trackLabel = paper.text((track.start - statistics.start) / zoom + labelSize + margin, pos + height / 2, track.title);
+                    trackLabel.attr('text-anchor', 'start');
+                    trackLabel.attr('font-size', 15);
+                }
+                pos += height + margin;
+            }
+
+            var now = paper.rect(((new Date()).getTime() / 1000 - statistics.start) / zoom + labelSize, 0, 1, document.height);
+            now.attr('fill', '#babdb6');
+            now.attr('stroke-width', 0);
+
+            var line = paper.rect(labelSize, 0, 1, document.height);
+            line.attr('fill', '#eeeeec');
+            line.attr('stroke-width', 0);
+
+            var postitionTime = function (pos) {
+                var date = new Date();
+                date.setTime(((pos < labelSize ? 0 : pos - labelSize) * zoom + statistics.start) * 1000);
+                return date.toLocaleDateString() + ' ' + date.getHours() + ':' + date.getMinutes();
+            };
+
+            var time = paper.text(labelSize + margin, document.height - height, postitionTime(0));
+            time.attr('text-anchor', 'start');
+            time.attr('stroke', '#eeeeec');
+
+            document.onmousemove = function (e) {
+                line.attr('x', e.clientX < labelSize ? labelSize : e.clientX);
+                time.attr('x', e.clientX < labelSize ? labelSize + margin : e.clientX + margin);
+
+                time.attr('text', postitionTime(e.clientX));
+            };
+
+            window.onresize = function () {
+                paper.setSize(document.width, document.height);
+                background.attr('width', document.width);
+                background.attr('height', document.height);
+                staffPanel.attr('height', document.height);
+                now.attr('height', document.height);
+                line.attr('height', document.height);
+                time.attr('y', document.height - height);
+            };
+        };
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+<body id="holder">
+</body>
+</html>

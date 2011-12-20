@@ -1,23 +1,8 @@
 <?php
 
-if (@!include __DIR__ . '/../vendor/silex.phar') {
-    require __DIR__ . '/../vendor/silex/autoload.php';
-}
-
-$app = new Silex\Application();
-
-$app['autoloader']->registerNamespaceFallbacks(array(__DIR__ . '/../src'));
-
-$config = require __DIR__ . '/config.php';
-foreach ($config as $key => $value) {
-    $app[$key] = $value;
-}
-
-$app->register(new Silex\Provider\TwigServiceProvider());
-$app->register(new Kappa\KayakoProvider());
+$app = require __DIR__ . '/bootstrap.php';
 
 $app->get('/', function () use ($app) {
-
     $table = array();
     foreach ($app['kappa.tickets'] as $ticket) {
         $staffName = $ticket->getOwnerStaffName();
@@ -39,6 +24,66 @@ $app->get('/', function () use ($app) {
 
     return $app['twig']->render('department.twig', array(
         'table' => $table
+    ));
+});
+
+$app->get('/statistics', function () use ($app) {
+    $makeArray = function($it) {
+        $array = array();
+        foreach ($it as $object) {
+            $array[$object['_id']] = $object;
+        }
+        return $array;
+    };
+
+    $start = time() - 8 * 60 * 60;
+    $end = time();
+
+    $statuses = $app['mongo.db']->statuses->find(array(
+        'start' => array('$lt' => new MongoDate($end)),
+        'end' => array('$gt' => new MongoDate($start)),
+    ));
+
+    $ticketIds = array();
+    $ownersIds = array();
+    foreach ($statuses as $status) {
+        if (!in_array($status['ticket'], $ticketIds)) {
+            $ticketIds[] = $status['ticket'];
+            $ownersIds[] = $status['owner'];
+        }
+    }
+
+    $tickets = $makeArray($app['mongo.db']->tickets->find(array(
+        '_id' => array('$in' => $ticketIds)
+    )));
+
+    $owners = $makeArray($app['mongo.db']->owners->find(array(
+        '_id' => array('$in' => $ownersIds)
+    )));
+
+    $statistics = array(
+        'start' => $start,
+        'end' => $end,
+        'staffs' => array()
+    );
+
+    foreach ($statuses as $status) {
+        $ownerName = $owners[$status['owner']]['name'];
+
+        isset($statistics['staffs'][$ownerName])
+            or $statistics['staffs'][$ownerName] = array();
+
+        $row = array(
+            'start' => $status['start']->sec > $start ? $status['start']->sec : $start,
+            'end' => $status['end']->sec < $end ? $status['end']->sec : $end,
+            'title' => $tickets[$status['ticket']]['subject']
+        );
+
+        $statistics['staffs'][$ownerName][] = $row;
+    }
+
+    return $app['twig']->render('statistics.twig', array(
+        'statistics' => json_encode($statistics),
     ));
 });
 

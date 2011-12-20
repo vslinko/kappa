@@ -37,6 +37,14 @@ class KayakoProvider implements ServiceProviderInterface
             return new ResultSet($tickets);
         });
 
+        $app['kappa.in_progress_status'] = $app->share(function () use ($app) {
+            return kyTicketStatus::get($app['kappa.in_progress_status_id']);
+        });
+
+        $app['kappa.in_progress_tickets'] = $app->share(function () use ($app) {
+            return kyTicket::getAll($app['kappa.department'], $app['kappa.in_progress_status']);
+        });
+
         if (isset($app['twig'])) {
             $app['twig']->addExtension(new TwigExtension());
         }
