@@ -20,23 +20,13 @@
                 };
             };
 
-            var zoom,
-                    height = 50,
+            var height = 50,
                     margin = 20,
                     pos = margin,
                     labelSize = margin * 2 + 200,
-                    colors = new Colors();
-
-
-            var end = new Date().getTime() / 1000;
-            if (end < statistics.end) {
-                end = statistics.end;
-            }
-            end += margin;
-            var diff = end - statistics.start;
-            var fieldWidth = document.width - labelSize - margin;
-            zoom = diff / fieldWidth;
-
+                    colors = new Colors(),
+                    fieldWidth = document.width - labelSize - margin,
+                    zoom = (statistics.end - statistics.start) / fieldWidth;
 
             var paper = Raphael("holder", document.width, document.height);
             var background = paper.rect(0, 0, document.width, document.height);
@@ -64,10 +54,6 @@
                 pos += height + margin;
             }
 
-            var now = paper.rect(((new Date()).getTime() / 1000 - statistics.start) / zoom + labelSize, 0, 1, document.height);
-            now.attr('fill', '#babdb6');
-            now.attr('stroke-width', 0);
-
             var line = paper.rect(labelSize, 0, 1, document.height);
             line.attr('fill', '#eeeeec');
             line.attr('stroke-width', 0);
@@ -94,7 +80,6 @@
                 background.attr('width', document.width);
                 background.attr('height', document.height);
                 staffPanel.attr('height', document.height);
-                now.attr('height', document.height);
                 line.attr('height', document.height);
                 time.attr('y', document.height - height);
             };
