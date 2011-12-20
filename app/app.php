@@ -83,7 +83,7 @@ $app->get('/statistics', function () use ($app) {
     }
 
     return $app['twig']->render('statistics.twig', array(
-        'statistics' => json_encode($statistics),
+        'statistics' => $statistics,
     ));
 });
 

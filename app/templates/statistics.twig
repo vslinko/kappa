@@ -2,16 +2,51 @@
 <html>
 <head>
     <title>Statistics</title>
-    <script src="https://raw.github.com/DmitryBaranovskiy/raphael/master/raphael.js"></script>
-    <script>
-        window.onload = function () {
-            var statistics = {{ statistics|raw }};
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
 
-            var Colors = function () {
+        body {
+            background-color: #2e3436;
+            font-family: "PT Sans", sans-serif;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            width: 1px;
+            height: 100px;
+            padding: 0 50px;
+            background-color: #555753;
+            color: #eeeeec;
+            white-space: nowrap;
+        }
+
+        td {
+            background-color: #888a85;
+            vertical-align: top;
+        }
+
+        div {
+            position: absolute;
+            width: 0px;
+            height: 100px;
+            line-height: 100px;
+            text-indent: 20px;
+        }
+    </style>
+    <script>
+        (function () {
+            var ColorCycle = function () {
                 var colors = ['#fce94f', '#fcaf3e', '#e9b96e', '#8ae234', '#729fcf', '#ad7fa8', '#ef2929'];
                 var i = -1;
 
-                this.getColor = function () {
+                this.next = function () {
                     i++;
                     if (i == colors.length) {
                         i = 0;
@@ -20,78 +55,84 @@
                 };
             };
 
-            var height = 50,
-                    margin = 20,
-                    pos = margin,
-                    labelSize = margin * 2 + 200,
-                    colors = new Colors(),
-                    fieldWidth = document.width - labelSize - margin,
-                    zoom = (statistics.end - statistics.start) / fieldWidth;
+            var TextMeasure = function () {
+                var el = document.createElement('p');
+                el.style.position = 'absolute';
+                el.style.width = 'auto';
+                el.style.height = 'auto';
+                el.style.top = '100%';
+                document.body.appendChild(el);
 
-            var paper = Raphael("holder", document.width, document.height);
-            var background = paper.rect(0, 0, document.width, document.height);
-            background.attr('fill', '#2e3436');
-            var staffPanel = paper.rect(0, 0, labelSize, document.height);
-            staffPanel.attr('fill', '#555753');
+                this.measure = function (string) {
+                    el.innerHTML = string;
+                    var sizes = {width: el.clientWidth, height: el.clientHeight};
+                    el.innerHTML = '';
 
-            for (staff in statistics.staffs) {
-                var staffLabel = paper.text(margin, pos + height / 2, staff);
-                staffLabel.attr('text-anchor', 'start');
-                staffLabel.attr('font-size', 20);
-                staffLabel.attr('fill', '#eeeeec');
+                    return sizes;
+                };
+            };
 
-                for (trackNo in statistics.staffs[staff]) {
-                    var track = statistics.staffs[staff][trackNo];
+            var Statistics = function (el, textSizeTestEl) {
+                var colorCycle = new ColorCycle();
+                var textMeasure = new TextMeasure(textSizeTestEl);
 
-                    var rect = paper.rect((track.start - statistics.start) / zoom + labelSize, pos, (track.end - track.start) / zoom, height);
-                    rect.attr('fill', colors.getColor());
-                    rect.attr('stroke', '#eeeeec');
+                var data = el.getElementsByTagName('td');
+                var statuses = el.getElementsByTagName('div');
 
-                    var trackLabel = paper.text((track.start - statistics.start) / zoom + labelSize + margin, pos + height / 2, track.title);
-                    trackLabel.attr('text-anchor', 'start');
-                    trackLabel.attr('font-size', 15);
+                this.start = parseInt(el.getAttribute('data-start'));
+                this.end = parseInt(el.getAttribute('data-end'));
+                this.width = data.length > 0 ? data[0].scrollWidth : el.scrollWidth;
+                this.zoom = (this.end - this.start) / this.width;
+
+                this.calculatePosition = function (status) {
+                    var margin = Math.round((status.getAttribute('data-start') - this.start) / this.zoom);
+                    var width = Math.round((status.getAttribute('data-end') - this.start) / this.zoom) - margin;
+
+                    status.style.marginLeft = margin + 'px';
+                    status.style.width = width + 'px';
+                };
+
+                this.arrangeInformation = function (status) {
+                    var title = status.getAttribute('data-title');
+
+                    if (textMeasure.measure(title).width + 40 < status.clientWidth) {
+                        status.innerText = title;
+                    }
+                };
+
+                this.colorize = function (status) {
+                    status.style.backgroundColor = colorCycle.next();
+                };
+
+                this.arrange = function (status) {
+                    this.calculatePosition(status);
+                    this.arrangeInformation(status);
+                    this.colorize(status);
+                };
+
+                for (var i = 0; i < statuses.length; i++) {
+                    this.arrange(statuses[i]);
                 }
-                pos += height + margin;
-            }
-
-            var line = paper.rect(labelSize, 0, 1, document.height);
-            line.attr('fill', '#eeeeec');
-            line.attr('stroke-width', 0);
-
-            var postitionTime = function (pos) {
-                var date = new Date();
-                date.setTime(((pos < labelSize ? 0 : pos - labelSize) * zoom + statistics.start) * 1000);
-                return date.toLocaleDateString() + ' ' + date.getHours() + ':' + date.getMinutes();
             };
 
-            var time = paper.text(labelSize + margin, document.height - height, postitionTime(0));
-            time.attr('text-anchor', 'start');
-            time.attr('stroke', '#eeeeec');
-
-            document.onmousemove = function (e) {
-                line.attr('x', e.clientX < labelSize ? labelSize : e.clientX);
-                time.attr('x', e.clientX < labelSize ? labelSize + margin : e.clientX + margin);
-
-                time.attr('text', postitionTime(e.clientX));
+            window.onload = function () {
+                new Statistics(document.getElementById('statistics'));
             };
-
-            window.onresize = function () {
-                paper.setSize(document.width, document.height);
-                background.attr('width', document.width);
-                background.attr('height', document.height);
-                staffPanel.attr('height', document.height);
-                line.attr('height', document.height);
-                time.attr('y', document.height - height);
-            };
-        };
+        })();
     </script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-        }
-    </style>
 </head>
-<body id="holder">
+<body>
+<table id="statistics" data-start="{{ statistics.start }}" data-end="{{ statistics.end }}">
+    {% for staff, statuses in statistics.staffs %}
+    <tr>
+        <th>{{ staff }}</th>
+        <td>
+            {% for status in statuses %}
+            <div data-start="{{ status.start }}" data-end="{{ status.end }}" data-title="{{ status.title }}"></div>
+            {% endfor %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
 </body>
 </html>
