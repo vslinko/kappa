@@ -34,6 +34,12 @@
     };
 
     var Statistics = function (el) {
+        var foot = document.createElement('tfoot');
+        var body = document.createElement('tbody');
+
+        el.appendChild(foot);
+        el.appendChild(body);
+
         var colorCycle = new ColorCycle();
         var textMeasure = new TextMeasure();
 
@@ -41,6 +47,10 @@
         var end = null;
         var width = null;
         var zoom = null;
+
+        var calculateTime = function (position) {
+            return position * zoom + start;
+        };
 
         var calculatePosition = function (status) {
             var margin = Math.round((status.getAttribute('data-start') - start) / zoom);
@@ -69,15 +79,20 @@
         };
 
         var reset = function (statistics) {
-            while (el.hasChildNodes()) {
-                el.removeChild(el.firstChild);
+            while (body.hasChildNodes()) {
+                body.removeChild(body.firstChild);
+            }
+
+            while (foot.hasChildNodes()) {
+                foot.removeChild(foot.firstChild);
             }
 
             colorCycle.reset();
         };
 
         var renderHTML = function (statistics) {
-            var statusElements = [];
+            var tableData = null,
+                statusElements = [];
 
             for (var staff in statistics.staffs) {
                 var tr = document.createElement('tr');
@@ -88,7 +103,7 @@
 
                 tr.appendChild(th);
                 tr.appendChild(td);
-                el.appendChild(tr);
+                body.appendChild(tr);
 
                 for (var i = 0; i < statistics.staffs[staff].length; i++) {
                     var div = document.createElement('div');
@@ -101,12 +116,13 @@
 
                     td.appendChild(div);
 
+                    tableData = td;
                     statusElements.push(div);
                 }
             }
 
             return {
-                tableData: td,
+                tableData: tableData,
                 statusElements: statusElements
             };
         };
@@ -119,6 +135,31 @@
 
             for (var i = 0; i < renderResult.statusElements.length; i++) {
                 arrange(renderResult.statusElements[i]);
+            }
+
+            var tr = document.createElement('tr');
+            var th = document.createElement('th');
+            var td = document.createElement('td');
+
+            tr.appendChild(th);
+            tr.appendChild(td);
+            foot.appendChild(tr);
+
+            var day = null;
+            for (var pos = 0; pos < width - 100; pos += 100) {
+                var div = document.createElement('div');
+
+                var date = new Date();
+                date.setTime(Math.round(calculateTime(pos)) * 1000);
+
+                if (day != date.getDate()) {
+                    div.innerHTML = date.toString('MMM dd HH:mm');
+                    day = date.getDate();
+                } else {
+                    div.innerHTML = date.toString('HH:mm');
+                }
+
+                td.appendChild(div);
             }
         };
 

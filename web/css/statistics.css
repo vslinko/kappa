@@ -13,7 +13,7 @@ table {
     border-collapse: collapse;
 }
 
-th {
+tbody th {
     width: 1px;
     height: 100px;
     padding: 0 50px;
@@ -22,15 +22,28 @@ th {
     white-space: nowrap;
 }
 
-td {
+tbody td {
     background-color: #888a85;
     vertical-align: top;
 }
 
-div {
+tbody div {
     position: absolute;
     width: 0;
     height: 100px;
     line-height: 100px;
     text-indent: 20px;
+}
+
+tfoot th, tfoot td {
+    background-color: #babdb6;
+}
+
+tfoot div {
+    width: 100px;
+    padding: 10px 0;
+    display: inline-block;
+    border-left: 1px solid #2e3436;
+    text-indent: 10px;
+    font-size: 70%;
 }

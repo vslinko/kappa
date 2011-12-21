@@ -13,3 +13,6 @@
 [submodule "web/vendor/JSON2"]
 	path = web/vendor/JSON2
 	url = git://github.com/douglascrockford/JSON-js.git
+[submodule "web/vendor/datejs"]
+	path = web/vendor/datejs
+	url = git://github.com/datejs/Datejs.git
