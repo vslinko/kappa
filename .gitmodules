@@ -16,3 +16,9 @@
 [submodule "web/vendor/datejs"]
 	path = web/vendor/datejs
 	url = git://github.com/datejs/Datejs.git
+[submodule "web/vendor/iCanHaz.js"]
+	path = web/vendor/iCanHaz.js
+	url = git://github.com/andyet/ICanHaz.js.git
+[submodule "web/vendor/Vine"]
+	path = web/vendor/Vine
+	url = git://github.com/arexkun/Vine.git

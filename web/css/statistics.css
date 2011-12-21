@@ -16,10 +16,10 @@ table {
 tbody th {
     width: 1px;
     height: 100px;
-    padding: 0 50px;
     background-color: #555753;
     color: #eeeeec;
     white-space: nowrap;
+    font-weight: normal;
 }
 
 tbody td {
@@ -32,7 +32,6 @@ tbody div {
     width: 0;
     height: 100px;
     line-height: 100px;
-    text-indent: 20px;
 }
 
 tfoot th, tfoot td {
@@ -40,7 +39,7 @@ tfoot th, tfoot td {
 }
 
 tfoot div {
-    width: 100px;
+    width: 99px;
     padding: 10px 0;
     display: inline-block;
     border-left: 1px solid #2e3436;

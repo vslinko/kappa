@@ -68,14 +68,14 @@ $app->get('/statistics.json', function () use ($app) {
     $statistics = array(
         'start' => $start,
         'end' => $end,
-        'staffs' => array()
+        'statistics' => array()
     );
 
     foreach ($statuses as $status) {
         $ownerName = $owners[$status['owner']]['name'];
 
-        isset($statistics['staffs'][$ownerName])
-            or $statistics['staffs'][$ownerName] = array();
+        isset($statistics['statistics'][$ownerName])
+            or $statistics['statistics'][$ownerName] = array();
 
         $row = array(
             'start' => $status['start']->sec > $start ? $status['start']->sec : $start,
@@ -83,10 +83,10 @@ $app->get('/statistics.json', function () use ($app) {
             'title' => $tickets[$status['ticket']]['subject']
         );
 
-        $statistics['staffs'][$ownerName][] = $row;
+        $statistics['statistics'][$ownerName][] = $row;
     }
 
-    ksort($statistics['staffs']);
+    ksort($statistics['statistics']);
 
     return new Symfony\Component\HttpFoundation\Response(json_encode($statistics), 200, array('Content-Type' => 'application/json'));
 });

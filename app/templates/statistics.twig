@@ -3,12 +3,40 @@
 <head>
     <title>Statistics</title>
     <link href="/css/statistics.css" rel="stylesheet" />
+    <script src="/vendor/Vine/vine.min.js"></script>
     <script src="/vendor/microajax/microajax.js"></script>
     <script src="/vendor/JSON2/json2.js"></script>
     <script src="/vendor/datejs/build/date.js"></script>
+    <script src="/vendor/iCanHaz.js/ICanHaz.js"></script>
     <script src="/js/statistics.js"></script>
+    {% raw %}
+    <script type="text/html" id="statistics">
+        <tfoot>
+            <tr>
+                <th></th>
+                <td>
+                    {{#timeline}}
+                    <div>{{timestamp}}</div>
+                    {{/timeline}}
+                </td>
+            </tr>
+        </tfoot>
+        <tbody>
+        {{#staffs}}
+            <tr>
+                <th>{{name}}</th>
+                <td>
+                    {{#tickets}}
+                    <div style="margin-left: {{margin}}px; width: {{width}}px; background-color: {{color}};">{{label}}</div>
+                    {{/tickets}}
+                </td>
+            </tr>
+        {{/staffs}}
+        </tbody>
+    </script>
+    {% endraw %}
 </head>
 <body>
-<table id="statistics"></table>
+<table id="statistics-table"></table>
 </body>
 </html>

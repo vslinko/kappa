@@ -33,165 +33,129 @@
         };
     };
 
-    var Statistics = function (el) {
-        var foot = document.createElement('tfoot');
-        var body = document.createElement('tbody');
-
-        el.appendChild(foot);
-        el.appendChild(body);
-
+    var Statistics = function (table, template) {
         var colorCycle = new ColorCycle();
         var textMeasure = new TextMeasure();
 
         var start = null;
         var end = null;
-        var width = null;
+        var statistics = null;
+        var clientWidth = 0;
+        var staffWidth = 0;
+        var panelWidth = 0;
         var zoom = null;
 
-        var calculateTime = function (position) {
-            return position * zoom + start;
-        };
-
-        var calculatePosition = function (status) {
-            var margin = Math.round((status.getAttribute('data-start') - start) / zoom);
-            var width = Math.round((status.getAttribute('data-end') - start) / zoom) - margin;
-
-            status.style.marginLeft = margin + 'px';
-            status.style.width = width + 'px';
-        };
-
-        var arrangeInformation = function (status) {
-            var title = status.getAttribute('data-title');
-
-            if (textMeasure.measure(title).width + 40 < status.clientWidth) {
-                status.innerText = title;
-            }
-        };
-
-        var colorize = function (status) {
-            status.style.backgroundColor = colorCycle.next();
-        };
-
-        var arrange = function (status) {
-            calculatePosition(status);
-            arrangeInformation(status);
-            colorize(status);
-        };
-
-        var reset = function (statistics) {
-            while (body.hasChildNodes()) {
-                body.removeChild(body.firstChild);
-            }
-
-            while (foot.hasChildNodes()) {
-                foot.removeChild(foot.firstChild);
-            }
-
-            colorCycle.reset();
-        };
-
-        var renderHTML = function (statistics) {
-            var tableData = null,
-                statusElements = [];
-
-            for (var staff in statistics.staffs) {
-                var tr = document.createElement('tr');
-                var th = document.createElement('th');
-                var td = document.createElement('td');
-
-                th.innerText = staff;
-
-                tr.appendChild(th);
-                tr.appendChild(td);
-                body.appendChild(tr);
-
-                for (var i = 0; i < statistics.staffs[staff].length; i++) {
-                    var div = document.createElement('div');
-
-                    var status = statistics.staffs[staff][i];
-
-                    div.setAttribute('data-start', status.start);
-                    div.setAttribute('data-end', status.end);
-                    div.setAttribute('data-title', status.title);
-
-                    td.appendChild(div);
-
-                    tableData = td;
-                    statusElements.push(div);
-                }
-            }
+        var position = function (ticketStart, ticketEnd) {
+            var margin = Math.round((ticketStart - start) / zoom);
+            var width = Math.round((ticketEnd - start) / zoom) - margin;
 
             return {
-                tableData: tableData,
-                statusElements: statusElements
-            };
+                margin: margin,
+                width: width
+            }
         };
 
-        var rearrange = function (statistics, renderResult) {
-            start = statistics.start;
-            end = statistics.end;
-            width = renderResult.tableData ? renderResult.tableData.scrollWidth : el.scrollWidth;
-            zoom = (end - start) / width;
+        var time = function (position) {
+            return Math.round(position * zoom) + start;
+        };
 
-            for (var i = 0; i < renderResult.statusElements.length; i++) {
-                arrange(renderResult.statusElements[i]);
+        var render = function () {
+            if (document.body.clientWidth == clientWidth) {
+                return;
             }
 
-            var tr = document.createElement('tr');
-            var th = document.createElement('th');
-            var td = document.createElement('td');
+            clientWidth = document.body.clientWidth;
+            panelWidth = document.body.clientWidth - staffWidth;
+            zoom = (end - start) / panelWidth;
+            colorCycle.reset();
 
-            tr.appendChild(th);
-            tr.appendChild(td);
-            foot.appendChild(tr);
+            var view = {
+                staffs: [],
+                timeline: []
+            };
 
             var day = null;
-            for (var pos = 0; pos < width - 100; pos += 100) {
-                var div = document.createElement('div');
+            var max = (Math.round(panelWidth / 100) - 1) * 100;
 
-                var date = new Date();
-                date.setTime(Math.round(calculateTime(pos)) * 1000);
+            for (var staffName in statistics) {
+                var staff = {
+                    name: staffName,
+                    tickets: []
+                };
 
-                if (day != date.getDate()) {
-                    div.innerHTML = date.toString('MMM dd HH:mm');
-                    day = date.getDate();
-                } else {
-                    div.innerHTML = date.toString('HH:mm');
+                var tickets = statistics[staffName];
+                for (var i = 0; i < tickets.length; i++) {
+                    var ticket = tickets[i];
+                    var measure = textMeasure.measure(ticket.title);
+                    var place = position(ticket.start, ticket.end);
+
+                    staff.tickets.push({
+                        margin: place.margin,
+                        width: place.width,
+                        color: colorCycle.next(),
+                        label: measure.width < place.width ? ticket.title : ''
+                    });
                 }
 
-                td.appendChild(div);
+                view.staffs.push(staff);
             }
+
+            for (var pos = 0; pos < max; pos += 100) {
+                var date = new Date();
+                date.setTime(time(pos) * 1000);
+
+                if (day != date.getDate()) {
+                    view.timeline.push({timestamp: date.toString('MMM dd HH:mm')});
+                    day = date.getDate();
+                } else {
+                    view.timeline.push({timestamp: date.toString('HH:mm')});
+                }
+            }
+
+            table.innerHTML = template(view);
         };
 
-        var render = function (statistics) {
-            reset(statistics);
+        var update = function (data) {
+            start = data.start;
+            end = data.end;
+            statistics = data.statistics;
+            staffWidth = 0;
 
-            var renderResult = renderHTML(statistics);
+            for (var staff in statistics) {
+                var measure = textMeasure.measure(staff);
+                if (measure.width > staffWidth) {
+                    staffWidth = measure.width;
+                }
+            }
 
-            rearrange(statistics, renderResult);
+            render();
         };
 
-        var readStream = function (path) {
+        var receive = function (path) {
             microAjax(path, function (statistics) {
-                render(JSON.parse(statistics));
+                update(JSON.parse(statistics));
             });
         };
 
-        this.render = function (statistics) {
-            render(statistics);
+        this.update = function (data) {
+            update(data);
         };
 
-        this.stream = function (path, interval) {
-            readStream(path);
+        this.subscribe = function (path, interval) {
+            receive(path);
 
             setInterval(function () {
-                readStream(path);
-            }, interval || 60000);
+                receive(path);
+            }, interval || 60000)
         };
+
+        vine.bind(window, 'resize', function () {
+            render();
+        });
     };
 
-    window.onload = function () {
-        var page = new Statistics(document.getElementById('statistics'));
-        page.stream('/statistics.json');
-    };
+    vine.bind(window, 'load', function () {
+        var page = new Statistics(document.getElementById('statistics-table'), ich.statistics);
+        page.subscribe('/statistics.json');
+    });
 })();
