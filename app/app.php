@@ -28,6 +28,10 @@ $app->get('/', function () use ($app) {
 });
 
 $app->get('/statistics', function () use ($app) {
+    return $app['twig']->render('statistics.twig');
+});
+
+$app->get('/statistics.json', function () use ($app) {
     $makeArray = function($it) {
         $array = array();
         foreach ($it as $object) {
@@ -82,9 +86,9 @@ $app->get('/statistics', function () use ($app) {
         $statistics['staffs'][$ownerName][] = $row;
     }
 
-    return $app['twig']->render('statistics.twig', array(
-        'statistics' => $statistics,
-    ));
+    ksort($statistics['staffs']);
+
+    return new Symfony\Component\HttpFoundation\Response(json_encode($statistics), 200, array('Content-Type' => 'application/json'));
 });
 
 $app->error(function (Exception $e, $code) use ($app) {

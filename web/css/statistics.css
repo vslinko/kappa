@@ -1,0 +1,36 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: #2e3436;
+    font-family: "PT Sans", sans-serif;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    width: 1px;
+    height: 100px;
+    padding: 0 50px;
+    background-color: #555753;
+    color: #eeeeec;
+    white-space: nowrap;
+}
+
+td {
+    background-color: #888a85;
+    vertical-align: top;
+}
+
+div {
+    position: absolute;
+    width: 0;
+    height: 100px;
+    line-height: 100px;
+    text-indent: 20px;
+}

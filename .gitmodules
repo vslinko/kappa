@@ -7,3 +7,9 @@
 [submodule "vendor/twig"]
 	path = vendor/twig
 	url = git://github.com/fabpot/Twig.git
+[submodule "web/vendor/microajax"]
+	path = web/vendor/microajax
+	url = git://github.com/vslinko/microajax.git
+[submodule "web/vendor/JSON2"]
+	path = web/vendor/JSON2
+	url = git://github.com/douglascrockford/JSON-js.git
